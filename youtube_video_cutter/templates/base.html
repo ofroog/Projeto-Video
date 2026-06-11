@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cortes Rápidos{% endblock %}</title>
+    <link rel="icon" sizes="32x32" href="{{ url_for('static', filename='favicon-16x16.png') }}" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NNSTQNJ07E"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-NNSTQNJ07E');
+    </script>
+    <!-- Hotjar Tracking Code for https://cortesrapidos.site -->
+    <script>
+        (function (h, o, t, j, a, r) {
+            h.hj = h.hj || function () { (h.hj.q = h.hj.q || []).push(arguments) };
+            h._hjSettings = { hjid: 5195235, hjsv: 6 };
+            a = o.getElementsByTagName('head')[0];
+            r = o.createElement('script'); r.async = 1;
+            r.src = t + h._hjSettings.hjid + j + h._hjSettings.hjsv;
+            a.appendChild(r);
+        })(window, document, 'https://static.hotjar.com/c/hotjar-', '.js?sv=');
+    </script>
+
+
+</head>
+
+<body>
+    <header class="fixed-header">
+
+        <div class="container">
+            <h1>
+                <a href="/" style="color: white; text-decoration: none;">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Cortes Rápidos" class="logo">
+                    <h1>Cortes Rápidos</h1> <!-- Título -->
+                </a>
+            </h1>
+            <!-- Navegação com link para login no canto superior direito -->
+            <nav style="position: absolute; top: 10px; right: 10px;">
+                
+                <a href="/login" style="text-decoration: none; font-size: 16px; color: white; font-weight: bold;">
+                    Login
+                </a>
+            </nav>
+
+
+        </div>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer id="site-footer">
+        <div class="container">
+            <p>&copy; 2024 Cortes Rápidos. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+   
+</body>
+
+</html>

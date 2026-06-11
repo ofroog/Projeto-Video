@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Cortes Rápidos</title>
+    <!-- Link para o CSS correto -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <!-- Scripts do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    
+    <!-- Script Firebase Configuration -->
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    
+</head>
+<body class="login-background">
+
+    <!-- Container Principal -->
+    <div class="login-container" id="login-container">
+        <!-- Formulário de Login -->
+        <div id="login-form" style="display: block;">
+            <h2 class="login-title">Login</h2>
+            <form>
+                <label for="email" class="login-label">E-mail:</label>
+                <input type="email" id="email" class="login-input" required>
+                <label for="password" class="login-label">Senha:</label>
+                <input type="password" id="password" class="login-input" required>
+                <button type="button" class="login-button" onclick="loginUser()">Login</button>
+                
+            <!-- Botão para login com Google -->
+            <button id="google-login-button" class="login-button" onclick="googleLogin()">Entrar com Google</button>
+
+                
+                <p><a href="javascript:void(0)" onclick="forgotPassword()" class="forgot-password-link">Esqueceu a
+
+                        senha?</a></p>
+                <p id="login-error" class="login-message" style="color: red; display: none;"></p>
+                
+            </form>
+            <p class="signup-link">Não tem uma conta? <a href="javascript:void(0)"
+                    onclick="showRegisterForm()">Cadastre-se</a></p>
+        </div>
+    
+    
+        <!-- Formulário de Recuperação de Senha -->
+        <div id="reset-password-form" style="display: none;">
+            <h2 class="login-title">Redefinir Senha</h2>
+            <form>
+                <label for="reset-email" class="login-label">E-mail:</label>
+                <input type="email" id="reset-email" class="login-input" required>
+                <button type="button" class="login-button" onclick="sendPasswordReset()">Enviar link de
+                    redefinição</button>
+            </form>
+            <p id="reset-message" class="login-message" style="color: red;"></p>
+            <p><a href="javascript:void(0)" onclick="showLoginForm()">Voltar para o login</a></p>
+        </div>
+    
+        <!-- Formulário de Cadastro -->
+        <div id="register-form" style="display: none;">
+            <h2 class="login-title">Cadastro</h2>
+            <form>
+                <label for="register-email" class="login-label">E-mail:</label>
+                <input type="email" id="register-email" class="login-input" required>
+                <label for="register-password" class="login-label">Senha:</label>
+                <input type="password" id="register-password" class="login-input" required>
+                <button type="button" class="login-button" onclick="registerUser()">Cadastrar</button>
+                <p id="register-error" class="login-message" style="color: red; display: none;"></p>
+            </form>
+            <p class="signup-link">Já tem uma conta? <a href="javascript:void(0)" onclick="showLoginForm()">Faça
+                    login</a></p>
+        </div>
+        
+
+    </div>
+
+
+    <script >
+
+          // Função para mostrar o formulário de login
+            function showLoginForm() {
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('reset-password-form').style.display = 'none';
+                document.getElementById('register-form').style.display = 'none';
+            }
+
+            // Função para mostrar o formulário de cadastro
+            function showRegisterForm() {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('reset-password-form').style.display = 'none';
+                document.getElementById('register-form').style.display = 'block';
+            }
+
+            // Função para mostrar o formulário de redefinição de senha
+            function showResetPasswordForm() {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('reset-password-form').style.display = 'block';
+                document.getElementById('register-form').style.display = 'none';
+            }
+
+            // Função para enviar o link de redefinição de senha
+            function sendPasswordReset() {
+                const email = document.getElementById('reset-email').value;
+
+                // Verificar se o campo de e-mail não está vazio
+                if (!email) {
+                    document.getElementById('reset-message').style.color = 'red';
+                    document.getElementById('reset-message').textContent = "Por favor, insira seu e-mail.";
+                    return;
+                }
+
+                // Enviar o link de redefinição de senha
+                firebase.auth().sendPasswordResetEmail(email)
+                    .then(() => {
+                        document.getElementById('reset-message').style.color = 'green';
+                        document.getElementById('reset-message').textContent = "E-mail enviado com sucesso!";
+                        setTimeout(() => showLoginForm(), 3000);  // Voltar para a tela de login após 3 segundos
+                    })
+                    .catch((error) => {
+                        document.getElementById('reset-message').style.color = 'red';
+                        document.getElementById('reset-message').textContent = "Erro: " + error.message;
+                    });
+            }
+
+            // Função de login
+            function loginUser() {
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                // Limpar qualquer mensagem de erro anterior
+                document.getElementById('login-error').style.display = 'none';
+
+                firebase.auth().signInWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        window.location.href = '/';
+                    })
+                    .catch((error) => {
+                        // Exibir a mensagem de erro na página de login
+                         const errorMessage = error.code === 'auth/invalid-email'
+                            ? "Por favor, insira um e-mail válido."
+                            : error.code === 'auth/wrong-password'
+                                ? "Senha incorreta. Tente novamente."
+                                : "Email ou Senha incorreta.";
+                        const loginErrorElement = document.getElementById('login-error');
+                        loginErrorElement.style.display = 'block';
+                        loginErrorElement.textContent = errorMessage;  // Mensagem de erro
+                    });
+            }
+
+            function googleLogin() {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+
+                   firebase.auth().signInWithPopup(provider)
+                        .then((result) => {
+                             //Sucesso no login com Google, redirecionando para a página inicial
+                            window.location.href = '/';  // Ou substitua pelo nome da sua página inicial
+                        })
+                        .catch((error) => {
+                            console.error("Erro ao fazer login com Google: ", error.message);
+                           alert('Erro ao fazer login com Google: ' + error.message);
+                       });
+                }
+
+
+            // Função para redefinição de senha a partir do formulário de login
+            function forgotPassword() {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('reset-password-form').style.display = 'block';
+                document.getElementById('register-form').style.display = 'none';
+            }
+
+            // Função para registro de usuário
+            function registerUser() {
+                const email = document.getElementById('register-email').value;
+                const password = document.getElementById('register-password').value;
+                // Limpar qualquer mensagem de erro anterior
+                document.getElementById('register-error').style.display = 'none';
+
+                if (password.length < 6) {  // Comprimento mínimo da senha
+                    const errorMessage = "A senha deve ter pelo menos 6 caracteres.";
+                    showError(errorMessage);
+                    return;
+                }
+
+                firebase.auth().createUserWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        alert('Cadastro realizado com sucesso!');
+                        showLoginForm();  // Voltar para o formulário de login
+                    })
+                    .catch((error) => {
+                        const errorMessage = error.code === 'auth/email-already-in-use'
+                            ? "Esse e-mail já está cadastrado."
+                            : "Erro ao cadastrar. Tente novamente.";
+
+                        showError(errorMessage);
+                    });
+            }
+            // Função para exibir a mensagem de erro na tela
+                function showError(message) {
+                    const registerErrorElement = document.getElementById('register-error');
+                    registerErrorElement.style.display = 'block';
+                    registerErrorElement.textContent = message;  // Exibir a mensagem de erro
+                }
+
+
+                // Função para exibir o nome do usuário na página inicial
+                    function displayWelcomeMessage() {
+                        const user = firebase.auth().currentUser;
+                        if (user) {
+                            // Verifica se o usuário tem um nome (via displayName), caso contrário, utiliza o e-mail
+                           const userName = user.displayName || user.email || "Usuário";
+                            document.getElementById('user-name').textContent = userName;
+
+                            // Exibe a área de boas-vindas e o menu de logout
+                            document.getElementById('welcome-container').style.display = 'block';
+
+                              // Oculta o formulário de login/cadastro
+                            document.getElementById('login-form').style.display = 'none';
+                            document.getElementById('register-form').style.display = 'none';
+                            document.getElementById('reset-password-form').style.display = 'none';
+
+                            
+                        } else {
+                            // Se não estiver logado, não mostra o nome ou menu de logout
+                            document.getElementById('welcome-container').style.display = 'none';
+                       }
+                    }
+
+                    // Função para atualizar o nome do usuário
+                    function updateUserName() {
+                        const user = firebase.auth().currentUser;
+                       const newName = document.getElementById('new-name').value;
+
+                        if (newName) {
+                            user.updateProfile({
+                               displayName: newName
+                          }).then(() => {
+                                // Atualiza a mensagem de boas-vindas com o novo nome
+                                displayWelcomeMessage();
+                               document.getElementById('name-prompt').style.display = 'none'; // Oculta a solicitação de nome
+                           }).catch((error) => {
+                               console.error('Erro ao atualizar o nome: ', error.message);
+                                 //Exibe erro na tela de forma amigável (sem alert)
+                               showError('Erro ao atualizar o nome: ' + error.message);
+                            });
+                        } else {
+                            showError('Por favor, insira um nome válido.');
+                        }
+                   }
+
+                    // Função para exibir mensagens de erro de forma amigável
+                    function showError(message) {
+                        const errorElement = document.createElement('div');
+                       errorElement.textContent = message;
+                        errorElement.style.color = 'red';
+                        errorElement.style.fontSize = '14px';
+                        errorElement.style.marginTop = '10px';
+                        document.getElementById('welcome-container').appendChild(errorElement); // Exibe o erro logo abaixo do conteúdo
+                    }
+
+                    // Função de logout
+                    function logoutUser() {
+                        firebase.auth().signOut()
+                            .then(() => {
+                                // Redireciona para a página inicial
+                                window.location.href = '/';
+                            })
+                            .catch((error) => {
+                                console.error("Erro ao fazer logout: ", error.message);
+                                // Exibe erro de logout na interface
+                                showError('Erro ao sair: ' + error.message);
+                            });
+                    }
+
+                    // Chamar a função para exibir a mensagem de boas-vindas ao carregar a página
+                    window.onload = displayWelcomeMessage;
+                   
+        
+
+
+       
+        
+    </script>
+</body>
+
+
+
+</html>

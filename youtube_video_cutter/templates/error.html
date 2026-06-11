@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erro - Cortes Rápidos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Redireciona para a página inicial após 20 segundos -->
+    <script>
+        setTimeout(function () {
+            window.location.href = '/';  // Redireciona para a página inicial
+        }, 20000);  // 20000 milissegundos = 20 segundos
+    </script>
+    <style>
+        body {
+            background-color: #f44336;
+            color: #fff;
+        }
+    
+        h1,
+        h2,
+        p,
+        a {
+            color: #fff;
+        }
+    
+        a {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <h1><a href="/" style="color: white; text-decoration: none;">Cortes Rápidos</a></h1>
+            <p>Ops! Algo deu errado...</p>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <section id="error-section" class="error-section">
+            <h2>Aconteceu algum erro, tente novamente</h2>
+            <p>Desculpe, houve um erro ao processar sua solicitação.</p>
+            <!-- Exibe a mensagem de erro específica -->
+            {% if error_message %}
+            <p><strong>Erro:</strong> {{ error_message }}</p>
+            {% endif %}
+            <p>Você será redirecionado para a <a href="/">página inicial</a> em 20 segundos. Se preferir, clique no link
+                para ir agora.</p>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 Cortes Rápidos. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+    
+</body>
+
+</html>

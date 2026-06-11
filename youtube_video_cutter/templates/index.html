@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Página Inicial - Cortes Rápidos{% endblock %}
+
+{% block content %}
+
+    <main class="container">
+        <section id="instructions" class="instruction-section">
+            <h2>Como Usar</h2>
+            <ol>
+                <li><strong>Cole a URL do vídeo:</strong> Insira o link do vídeo que você deseja cortar no campo
+                    fornecido.</li>
+                <li><strong>Obter informações do vídeo:</strong> Clique no botão "Obter informações do vídeo" para
+                    carregar as informações necessárias.</li>
+                <li><strong>Duração do Video:</strong> O Video Não pode ser maior que 10 minutos.</li>
+                <li><strong>Escolha a resolução:</strong> Selecione a qualidade do vídeo que você deseja baixar.</li>
+                <li><strong>Defina o intervalo de corte:</strong> Insira o tempo desejado nos campos de "Início" e "Fim"
+                    no formato MM:SS (ex: 0:30 ou 1:30).</li>
+                <li><strong>Baixar o vídeo:</strong> Clique no botão "Baixar Vídeo" para iniciar o download.</li>
+            </ol>
+        </section>
+        
+
+        <form id="video-form" onsubmit="fetchVideoInfo(event)">
+            <input type="text" id="video-url" placeholder="Cole a URL do vídeo aqui" required>
+            <button type="submit">Obter informações do vídeo</button>
+        </form>
+
+        <div id="spinner" style="display: none;" class="spinner">🔄</div>
+        <div id="status-message" style="text-align: center;"></div>
+
+        <div id="video-info" style="display:none;">
+            <h2>Prévia do vídeo:</h2>
+            <img id="thumbnail" src="" alt="Thumbnail do vídeo" class="thumbnail">
+            <h2>Escolha a Resolução:</h2>
+            <form action="/download" method="POST" onsubmit="handleDownload(event)">
+                <input type="hidden" name="url" id="video-url-hidden">
+
+                <label for="start_time">Início:</label>
+                <input type="text" name="start_time" id="start_time" placeholder="1:00" required
+                    oninput="validateTimeInput(this)">
+
+                <label for="end_time">Fim:</label>
+                <input type="text" name="end_time" id="end_time" placeholder="1:35" required
+                    oninput="validateTimeInput(this)">
+
+                <select name="resolution" id="formats" required></select>
+
+
+
+            
+
+                
+               
+
+                <div  class="button-container">
+
+                    <button type="submit" id="download-button">Baixar Vídeo</button>
+                    <a href="/" id="cancel-button" class="cancel-button" onclick="cancelDownload(event)">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+
+    
+
+    
+
+    <script>
+        // Monitorar o clique no botão de obter informações do vídeo
+            document.getElementById("video-form").addEventListener("submit", function (event) {
+                gtag('event', 'fetch_video_info', {
+                    'event_category': 'Vídeo',
+                    'event_label': 'Obter Informações do Vídeo',
+                    'value': 1
+                });
+            });
+
+         document.getElementById("download-button").addEventListener("click", function () {
+                gtag('event', 'download', {
+                    'event_category': 'Vídeo',
+                    'event_label': 'Baixar Vídeo',
+                    'value': 1
+                });
+            });
+        function cancelDownload(event) {
+                event.preventDefault();  // Impede o redirecionamento imediato
+                const videoUrl = document.getElementById('video-url').value;
+
+                if (!videoUrl) {
+                    alert("Nenhum download em andamento para cancelar.");
+                    return;
+                }
+
+                // Enviar solicitação para o servidor para cancelar o download
+                fetch('/cancel_download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: videoUrl })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert("Download cancelado com sucesso!");
+                            window.location.href = '/';  // Redireciona após cancelar
+                        } else {
+                            alert("espere o corte começar para cancelar.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao cancelar o download:', error);
+                    });
+            }
+        
+          window.addEventListener('beforeunload', function (event) {
+                const videoUrl = document.getElementById('video-url').value;
+
+                if (videoUrl) {
+                    // Envia uma solicitação para o backend informando que o download deve ser interrompido
+                    navigator.sendBeacon('/cancel_download', JSON.stringify({ url: videoUrl }));
+                }
+
+            // Não há necessidade de exibir uma mensagem de confirmação
+            // Retornar qualquer valor diferente de undefined mostrará uma mensagem padrão de confirmação de saída
+             });
+        
+        async function fetchVideoInfo(event) {
+            event.preventDefault();
+            const url = document.getElementById('video-url').value;
+            const spinner = document.getElementById('spinner');
+            const statusMessage = document.getElementById('status-message');
+
+            spinner.style.display = 'block';
+            statusMessage.innerText = 'Encontrando seu vídeo...';
+
+            if (!url) {
+                alert("Por favor, insira uma URL válida.");
+                spinner.style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await fetch('/fetch_video_info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                });
+                const data = await response.json();
+                spinner.style.display = 'none';
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                document.getElementById('thumbnail').src = data.thumbnail_url;
+                document.getElementById('formats').innerHTML = data.formats.map(fmt =>
+                    `<option value="${fmt.format_id}">${fmt.format}</option>`
+                ).join('');
+                document.getElementById('video-info').style.display = 'block';
+            } catch (error) {
+                console.error('Erro ao obter informações do vídeo:', error);
+                alert('Erro ao obter informações do vídeo.');
+                spinner.style.display = 'none';
+            }
+        }
+
+        function validateTimeInput(input) {
+            // Permite apenas números e ':'
+            input.value = input.value.replace(/[^0-9:]/g, '');
+            // Verifica se existe mais de um ':'
+            if ((input.value.match(/:/g) || []).length > 1) {
+                input.value = input.value.slice(0, input.value.lastIndexOf(':'));
+            }
+        }
+
+        function handleDownload(event) {
+            event.preventDefault();
+            const downloadForm = event.target;
+            const spinner = document.getElementById('spinner');
+            const videoUrl = document.getElementById('video-url').value;
+            document.getElementById('video-url-hidden').value = videoUrl;
+
+            if (!videoUrl) {
+                alert("Por favor, insira uma URL válida.");
+                return;
+            }
+
+            spinner.style.display = 'block';
+             // Esconde o botão de download
+            document.getElementById('download-button').style.display = 'none';
+
+            // Esconde a seção de resolução
+            document.getElementById('video-info').style.display = 'none';
+
+            // Esconder o rodapé
+            document.getElementById("site-footer").style.display = "none";
+
+          
+
+            // Inicia o cronômetro simulado
+            let remainingTime = 5 * 60; // 5 minutos em segundos
+            const countdownContainer = document.createElement('div');
+            countdownContainer.id = 'countdown-container';
+            countdownContainer.style.display = 'flex'; // Adiciona flexbox
+            countdownContainer.style.flexDirection = 'column'; // Alinha verticalmente
+            countdownContainer.style.alignItems = 'center'; // Centraliza horizontalmente
+            countdownContainer.style.justifyContent = 'center'; // Centraliza verticalmente
+            countdownContainer.style.textAlign = 'center'; // Alinha o texto ao centro
+            countdownContainer.style.fontSize = '20px'; // Ajusta o tamanho da fonte do cronômetro
+            
+
+            // Insere o cronômetro no corpo antes do rodapé
+            const footer = document.querySelector('footer');
+            footer.parentNode.insertBefore(countdownContainer, footer);
+            const countdownDisplay = document.createElement('div');
+            countdownDisplay.id = 'countdown';
+            countdownContainer.appendChild(countdownDisplay);
+
+             // Insere o container no DOM
+            document.body.insertBefore(countdownContainer, document.body.lastChild);
+
+              // Exibe o botão de cancelar
+            const cancelButton = document.getElementById('cancel-button');
+            cancelButton.style.display = 'inline-block'; // Torna o botão visível
+            cancelButton.style.marginTop = '15px'; // Espaçamento entre cronômetro e botão
+            countdownContainer.insertAdjacentElement('afterend', cancelButton); // Coloca o botão abaixo do cronômetro
+            
+
+
+
+            const messages = [
+                "Construindo seu vídeo...",
+                "Preparando seu vídeo...",
+                "Seu vídeo ficará pronto em breve...",
+                "Quase lá...",
+                "Estamos quase prontos!"
+            ];
+
+            let messageIndex = 0;
+            const interval = setInterval(() => {
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+                countdownDisplay.innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                // Atualiza a borda
+                countdownContainer.style.borderColor = `hsl(${(remainingTime / (5 * 60)) * 120}, 100%, 50%)`;
+
+                if (remainingTime > 0) {
+                    // Mostra a mensagem interativa
+                    if (remainingTime % (60 - messageIndex * 15) === 0) {
+                        countdownDisplay.innerText = messages[messageIndex];
+                        messageIndex = (messageIndex + 1) % messages.length;
+                    }
+                    remainingTime -= 1;
+                } else {
+                    // Se o tempo simulado acabar, continua a execução normal
+                    countdownDisplay.innerText = 'Download em progresso...';
+                    clearInterval(interval); // Para o cronômetro quando terminar
+                }
+            }, 1000);
+
+            // Submete o formulário para iniciar o download real
+            downloadForm.submit();
+
+            // Espera a resposta do servidor após o download real
+            fetch(downloadForm.action, {
+                method: 'POST',
+                body: new FormData(downloadForm)
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.blob(); // Se o download foi bem-sucedido, converte para Blob
+                    }
+                    throw new Error('Erro no download');
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'video.mp4'; // Nome do arquivo
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    countdownDisplay.innerText = 'Download concluído!';
+
+                    // Redireciona para a página inicial após 2 segundos
+                    setTimeout(() => {
+                        window.location.href = '/'; // Redireciona para a página inicial
+                    }, 2000);
+                })
+                .catch(error => {
+                    console.error('Erro ao baixar o vídeo:', error);
+                    countdownDisplay.innerText = 'Ocorreu um erro ao baixar o vídeo.';
+                });
+        }
+        
+    </script>
+    {% endblock %}
+</body>
+
+</html>
+
+
+
+
+    
